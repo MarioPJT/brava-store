@@ -35,6 +35,10 @@ npm run preview
 
 Las migraciones SQL están en `supabase/migrations/`. Aplícalas en orden en el proyecto Supabase que vayas a usar. Consulta [SUPABASE_SETUP.md](SUPABASE_SETUP.md) para el esquema, los permisos y el primer usuario administrador.
 
+## Flujo de ramas
+
+`main` es la línea estable y `develop` reúne los cambios en preparación. Consulta [BRANCHING.md](BRANCHING.md) para crear ramas de funciones, correcciones y hotfixes.
+
 ## Estado actual
 
 La interfaz incluye catálogo con filtros, carrito de demostración, registro e inicio de sesión, edición de productos, gestión de perfiles, campañas y configuración de tienda. El checkout aún no procesa pagos ni crea pedidos reales.
