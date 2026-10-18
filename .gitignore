@@ -5,8 +5,9 @@ dist/
 !.env.example
 .agents/
 .codex/
+skills-lock.json
+supabase/.temp/
+.vercel/
 .DS_Store
 Thumbs.db
-*.logsupabase/.temp/
-.vercel/
-
+*.log
