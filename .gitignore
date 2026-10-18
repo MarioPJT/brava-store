@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.agents/
+.codex/
+.DS_Store
+Thumbs.db
+*.logsupabase/.temp/
+.vercel/
+
