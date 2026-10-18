@@ -1,3 +1,4 @@
+-- Pending in BRAVA Store; review before enabling automatic production deployments.
 -- This helper only runs as a database event trigger; it is not a client RPC.
 do $$
 begin

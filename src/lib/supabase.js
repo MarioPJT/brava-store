@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
+// VITE_* values ship to the browser, so this client must only use the publishable key.
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabaseConfigured = Boolean(url && key);
 export const supabase = supabaseConfigured ? createClient(url, key) : null;
 
+// Keep database column names separate from the product shape used by the UI.
 export const fromDatabaseProduct = row => ({
   id: row.id, name: row.name, seller: row.seller, price: Number(row.price), category: row.category,
   color: row.color, style: row.style, stock: row.stock, badge: row.badge, img: row.image_url,

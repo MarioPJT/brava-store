@@ -1,3 +1,4 @@
+-- This version is already recorded as applied in the BRAVA Store project; keep the ID in sync.
 create table public.marketing_campaigns (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -13,6 +14,7 @@ create table public.marketing_campaigns (
 );
 
 alter table public.marketing_campaigns enable row level security;
+-- Campaign drafts are private; every read and write policy below checks the admin profile.
 grant select, insert, update, delete on public.marketing_campaigns to authenticated;
 
 create policy "Only admins can read marketing campaigns"
@@ -42,6 +44,7 @@ create table public.store_settings (
 );
 
 alter table public.store_settings enable row level security;
+-- Visitors can read storefront copy, while only admins can change it.
 grant select on public.store_settings to anon, authenticated;
 grant insert, update on public.store_settings to authenticated;
 

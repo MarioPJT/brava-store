@@ -30,6 +30,7 @@ export default function AdminWorkspace(props){
   const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
   const [search,setSearch]=useState('');
   const [categoryFilter,setCategoryFilter]=useState('Todas');
+  // This guard hides admin UI; database RLS and RPC checks remain the real security boundary.
   if(supabaseConfigured&&profile?.role!=='admin')return <div className="admin-denied"><div className="admin-denied-card"><span className="admin-brand-mark">B</span><h1>Este espacio es privado.</h1><p>Inicia sesión con una cuenta administradora para gestionar BRAVA.</p><button className="btn dark" onClick={()=>go('cuenta')}>Ir a mi cuenta <ArrowRight size={15}/></button></div></div>;
   const current=sections.find(item=>item.id===adminSection)||sections[0];
   const [title,subtitle]=headings[adminSection]||headings.overview;

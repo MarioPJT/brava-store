@@ -50,6 +50,7 @@ function App() {
   useEffect(()=>{localStorage.setItem('brava-cart',JSON.stringify(cart));},[cart]);
   useEffect(()=>{localStorage.setItem('brava-favorites',JSON.stringify(saved));},[saved]);
   useEffect(()=>{if(!supabaseConfigured){localStorage.setItem('brava-products',JSON.stringify(catalog));return;}},[catalog]);
+  // Hydrate the current session and catalog, then unsubscribe when the app unmounts.
   useEffect(()=>{
     if(!supabase) return;
     let alive=true;
@@ -84,6 +85,7 @@ function App() {
     return()=>{alive=false;};
   },[page,adminSection,profile?.role]);
   const go = p => { setPage(p); setMobileNav(false); window.scrollTo({top:0,behavior:'smooth'}); };
+  // The cart is local demo state; this does not reserve stock or create a paid order.
   const add = (p,qty=1,variant='') => { setCart(old => { const found=old.find(i=>i.id===p.id&&i.variant===variant); return found ? old.map(i=>i.id===p.id&&i.variant===variant?{...i,qty:Math.min(p.stock,i.qty+qty)}:i) : [...old,{...p,variant,key:`${p.id}-${variant||'unica'}`,qty:Math.min(p.stock,qty)}]; }); setNotice('Añadido a tu bolsa'); setTimeout(()=>setNotice(''),2300); };
   const changeQty = (key,delta) => setCart(old=>old.map(i=>(i.key||`${i.id}-unica`)===key?{...i,qty:Math.min(i.stock,i.qty+delta)}:i).filter(i=>i.qty>0));
   const toggleSave = id => setSaved(old=>old.includes(id)?old.filter(x=>x!==id):[...old,id]);
@@ -93,6 +95,7 @@ function App() {
   const saveProduct = async product => { if(supabase){const query=product.id?supabase.from('products').update(toDatabaseProduct(product)).eq('id',product.id).select().single():supabase.from('products').insert(toDatabaseProduct(product)).select().single();const {data,error}=await query;if(error){notify(`No se pudo guardar: ${error.message}`);return;}const savedProduct=fromDatabaseProduct(data);setCatalog(old=>product.id?old.map(p=>p.id===product.id?savedProduct:p):[savedProduct,...old]);}else{setCatalog(old=>product.id?old.map(p=>p.id===product.id?product:p):[{...product,id:Date.now()} ,...old]);}setProductFormOpen(false);setEditingProduct(null);notify('Producto guardado.'); };
   const deleteProduct = async product => { if(!window.confirm(`¿Eliminar ${product.name}?`))return;if(supabase){const {error}=await supabase.from('products').delete().eq('id',product.id);if(error){notify(`No se pudo eliminar: ${error.message}`);return;}}setCatalog(old=>old.filter(p=>p.id!==product.id));notify('Producto eliminado.'); };
   const signOut = async()=>{if(supabase)await supabase.auth.signOut();setAuthUser(null);setProfile(null);go('inicio');};
+  // PostgreSQL validates the caller and target role inside this RPC; the UI cannot grant itself admin.
   const changeUserRole=async user=>{const nextRole=user.role==='admin'?'user':'admin';const {error}=await supabase.rpc('admin_set_user_role',{target_user_id:user.id,target_role:nextRole});if(error){notify(`No se pudo cambiar el rol: ${error.message}`);return;}setAdminUsers(old=>old.map(item=>item.id===user.id?{...item,role:nextRole}:item));notify(`Rol actualizado: ${nextRole}.`);};
   const saveCampaign=async campaign=>{const payload={...campaign,created_by:campaign.created_by||authUser?.id,updated_at:new Date().toISOString()};const query=campaign.id?supabase.from('marketing_campaigns').update(payload).eq('id',campaign.id).select().single():supabase.from('marketing_campaigns').insert(payload).select().single();const {data,error}=await query;if(error){notify(`No se pudo guardar la campaña: ${error.message}`);return;}setCampaigns(old=>campaign.id?old.map(item=>item.id===campaign.id?data:item):[data,...old]);setCampaignFormOpen(false);setEditingCampaign(null);notify('Borrador guardado.');};
   const deleteCampaign=async campaign=>{if(!window.confirm(`¿Eliminar el borrador “${campaign.name}”?`))return;const {error}=await supabase.from('marketing_campaigns').delete().eq('id',campaign.id);if(error){notify(`No se pudo eliminar: ${error.message}`);return;}setCampaigns(old=>old.filter(item=>item.id!==campaign.id));notify('Borrador eliminado.');};
