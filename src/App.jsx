@@ -266,13 +266,26 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
       return await response.json();
     }finally{window.clearTimeout(timer);}
   };
-  const saveDetectedLocation=(place,mapUrl)=>setForm(current=>{
+  const lookupStreetAddress=async(coords)=>{
+    const apiKey=import.meta.env.VITE_GEOAPIFY_API_KEY;
+    if(!apiKey||!coords)return null;
+    const params=new URLSearchParams({lat:coords.latitude,lon:coords.longitude,apiKey,format:'json',lang:'es',limit:'1'});
+    const controller=new AbortController(),timer=window.setTimeout(()=>controller.abort(),9000);
+    try{
+      const response=await fetch(`https://api.geoapify.com/v1/geocode/reverse?${params}`,{signal:controller.signal});
+      if(!response.ok)throw new Error('street-geocode-failed');
+      const result=await response.json();
+      return result.results?.[0]||null;
+    }finally{window.clearTimeout(timer);}
+  };
+  const saveDetectedLocation=(place,mapUrl,streetAddress)=>setForm(current=>{
     const notes=(current.locationNotes||'').split('\n').filter(line=>!line.startsWith('Pin de entrega:'));
     if(mapUrl)notes.push(`Pin de entrega: ${mapUrl}`);
     return {...current,
+      address:streetAddress?.address_line1||[streetAddress?.street,streetAddress?.housenumber].filter(Boolean).join(' ')||current.address,
       department:place?.principalSubdivision||current.department,
-      city:place?.city||place?.locality||current.city,
-      postalCode:place?.postcode||current.postalCode,
+      city:streetAddress?.city||place?.city||place?.locality||current.city,
+      postalCode:streetAddress?.postcode||place?.postcode||current.postalCode,
       locationNotes:notes.filter(Boolean).join('\n'),
     };
   });
@@ -285,9 +298,11 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
       const lat=position.coords.latitude.toFixed(6),lon=position.coords.longitude.toFixed(6),mapUrl=`https://maps.google.com/?q=${lat},${lon}`;
       let place=null;
       try{place=await lookupLocation({latitude:lat,longitude:lon});}catch{place=null;}
-      saveDetectedLocation(place,mapUrl);
+      let streetAddress=null;
+      try{streetAddress=await lookupStreetAddress({latitude:lat,longitude:lon});}catch{streetAddress=null;}
+      saveDetectedLocation(place,mapUrl,streetAddress);
       const locality=place?.city||place?.locality;
-      setLocationStatus(locality?'Ubicación agregada. Completamos ciudad, departamento y código postal cuando están disponibles; revisa la dirección y el pin antes de continuar.':'Guardamos el pin de ubicación, pero no pudimos completar ciudad y departamento. Revisa la conexión y completa esos campos manualmente.');
+      setLocationStatus(locality?(streetAddress?.address_line1?'Ubicación agregada. Completamos la dirección aproximada y los datos de ciudad; verifica todo antes de continuar.':'Completamos ciudad y departamento. Para llenar calle y número configura la búsqueda de direcciones; verifica el pin y completa los campos faltantes.'):'Guardamos el pin de ubicación, pero no pudimos completar ciudad y departamento. Revisa la conexión y completa esos campos manualmente.');
     }catch(error){
       // An in-app browser may time out without GPS; only then try an explicitly disclosed approximate IP location.
       if(error?.code===2||error?.code===3){
@@ -323,7 +338,7 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
         <label className="checkout-field checkout-full">Dirección<input required autoComplete="address-line1" value={form.address} onChange={e=>update('address',e.target.value)} placeholder="Calle, carrera y número"/></label>
         <label className="checkout-field checkout-full">Apartamento, casa o interior <span>(opcional)</span><input autoComplete="address-line2" value={form.extraAddress} onChange={e=>update('extraAddress',e.target.value)} placeholder="Apto., torre, interior"/></label>
         <div className="location-action"><button type="button" className="location-button" onClick={useCurrentLocation} disabled={locationBusy}><Navigation size={15}/>{locationBusy?'Buscando ubicación…':'Usar mi ubicación actual'}</button><span>Con tu permiso, completamos ciudad, departamento y código postal. La dirección exacta se revisa manualmente.</span></div>
-        <small className="location-privacy">Tu ubicación se consulta en BigDataCloud. Si el GPS no responde, intentamos una ubicación aproximada por red; puedes seguir escribiendo la dirección manualmente. <a href="https://www.bigdatacloud.com/privacy" target="_blank" rel="noreferrer">Ver privacidad</a>.</small>
+        <small className="location-privacy">Tu ubicación se consulta en BigDataCloud. Si el GPS no responde, intentamos una ubicación aproximada por red; con la búsqueda de direcciones activa, también se comparte con Geoapify para buscar calle y número. <a href="https://www.bigdatacloud.com/privacy" target="_blank" rel="noreferrer">Privacidad de BigDataCloud</a> · <a href="https://www.geoapify.com/privacy-policy/" target="_blank" rel="noreferrer">Geoapify</a>.</small>
         {locationStatus&&<p className="location-status" role="status" aria-live="polite">{locationStatus}</p>}
         <div className="checkout-fields three-cols"><label className="checkout-field">Departamento<input required autoComplete="address-level1" value={form.department} onChange={e=>update('department',e.target.value)} placeholder="Departamento"/></label><label className="checkout-field">Ciudad<input required autoComplete="address-level2" value={form.city} onChange={e=>update('city',e.target.value)} placeholder="Ciudad"/></label><label className="checkout-field">Código postal <span>(opcional)</span><input autoComplete="postal-code" value={form.postalCode} onChange={e=>update('postalCode',e.target.value)} placeholder="Código postal"/></label></div>
         <label className="checkout-field checkout-full location-notes">Indicaciones para encontrar el lugar <span>(opcional)</span><textarea rows="3" value={form.locationNotes} onChange={e=>update('locationNotes',e.target.value)} placeholder="Ej.: portería azul junto al parque; llamar al llegar; casa de reja blanca…"/></label>

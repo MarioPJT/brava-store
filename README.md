@@ -24,6 +24,12 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 No pongas claves `service_role` o secretas en variables `VITE_` ni en el navegador.
 
+Para completar calle y número desde la ubicación, añade una clave de Geoapify en
+`VITE_GEOAPIFY_API_KEY`. Es una clave pública del navegador: restríngela en Geoapify
+al dominio local/de producción de BRAVA y al servicio **Reverse Geocoding**. Sin
+esa clave, la ubicación puede completar ciudad y departamento; el apartamento o
+interior siempre debe confirmarlo la persona.
+
 ## Compilar
 
 ```bash
