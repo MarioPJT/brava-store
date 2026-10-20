@@ -256,6 +256,26 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
   const update=(field,value)=>setForm(old=>({...old,[field]:value}));
   const [locationBusy,setLocationBusy]=useState(false),[locationStatus,setLocationStatus]=useState('');
   // Browser geolocation supplies coordinates; a client-side reverse lookup fills locality fields.
+  const lookupLocation=async(coords)=>{
+    const values={localityLanguage:'es'};
+    if(coords){values.latitude=coords.latitude;values.longitude=coords.longitude;}
+    const controller=new AbortController(),timer=window.setTimeout(()=>controller.abort(),9000);
+    try{
+      const response=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${new URLSearchParams(values)}`,{signal:controller.signal});
+      if(!response.ok)throw new Error('reverse-geocode-failed');
+      return await response.json();
+    }finally{window.clearTimeout(timer);}
+  };
+  const saveDetectedLocation=(place,mapUrl)=>setForm(current=>{
+    const notes=(current.locationNotes||'').split('\n').filter(line=>!line.startsWith('Pin de entrega:'));
+    if(mapUrl)notes.push(`Pin de entrega: ${mapUrl}`);
+    return {...current,
+      department:place?.principalSubdivision||current.department,
+      city:place?.city||place?.locality||current.city,
+      postalCode:place?.postcode||current.postalCode,
+      locationNotes:notes.filter(Boolean).join('\n'),
+    };
+  });
   const useCurrentLocation=async()=>{
     if(!window.isSecureContext){setLocationStatus('El navegador solo permite ubicación en una conexión segura (HTTPS) o en localhost. Abre BRAVA en Chrome desde el enlace local o usa la dirección manual.');return;}
     if(!navigator.geolocation){setLocationStatus('Este navegador no ofrece ubicación. Abre la tienda en Chrome o Safari, o completa la dirección manualmente.');return;}
@@ -264,29 +284,23 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
       const position=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:false,timeout:25000,maximumAge:120000}));
       const lat=position.coords.latitude.toFixed(6),lon=position.coords.longitude.toFixed(6),mapUrl=`https://maps.google.com/?q=${lat},${lon}`;
       let place=null;
-      try{
-        // The provider's free endpoint is client-only and is called only after the user shares current location.
-        const params=new URLSearchParams({latitude:lat,longitude:lon,localityLanguage:'es'});
-        const controller=new AbortController(),timer=window.setTimeout(()=>controller.abort(),9000);
-        try{
-          const response=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`,{signal:controller.signal});
-          if(!response.ok)throw new Error('reverse-geocode-failed');
-          place=await response.json();
-        }finally{window.clearTimeout(timer);}
-      }catch{place=null;}
-      setForm(current=>{
-        const notes=(current.locationNotes||'').split('\n').filter(line=>!line.startsWith('Pin de entrega:'));
-        notes.push(`Pin de entrega: ${mapUrl}`);
-        return {...current,
-          department:place?.principalSubdivision||current.department,
-          city:place?.city||place?.locality||current.city,
-          postalCode:place?.postcode||current.postalCode,
-          locationNotes:notes.filter(Boolean).join('\n'),
-        };
-      });
+      try{place=await lookupLocation({latitude:lat,longitude:lon});}catch{place=null;}
+      saveDetectedLocation(place,mapUrl);
       const locality=place?.city||place?.locality;
       setLocationStatus(locality?'Ubicación agregada. Completamos ciudad, departamento y código postal cuando están disponibles; revisa la dirección y el pin antes de continuar.':'Guardamos el pin de ubicación, pero no pudimos completar ciudad y departamento. Revisa la conexión y completa esos campos manualmente.');
     }catch(error){
+      // An in-app browser may time out without GPS; only then try an explicitly disclosed approximate IP location.
+      if(error?.code===2||error?.code===3){
+        try{
+          const place=await lookupLocation();
+          const locality=place?.city||place?.locality;
+          if(locality){
+            saveDetectedLocation(place);
+            setLocationStatus(`No se pudo leer el GPS. Completamos ${locality} y el departamento con una ubicación aproximada de tu red; verifica los datos antes de continuar.`);
+            return;
+          }
+        }catch{/* Keep the original GPS error if the approximate lookup is unavailable. */}
+      }
       const messages={
         1:'El permiso de ubicación está bloqueado. En los ajustes del sitio, permite Ubicación y vuelve a intentarlo; también revisa que la ubicación del dispositivo esté activa.',
         2:'El dispositivo no pudo determinar tu ubicación. Activa los servicios de ubicación o prueba desde un teléfono con GPS; también puedes completar la dirección manualmente.',
@@ -309,7 +323,7 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
         <label className="checkout-field checkout-full">Dirección<input required autoComplete="address-line1" value={form.address} onChange={e=>update('address',e.target.value)} placeholder="Calle, carrera y número"/></label>
         <label className="checkout-field checkout-full">Apartamento, casa o interior <span>(opcional)</span><input autoComplete="address-line2" value={form.extraAddress} onChange={e=>update('extraAddress',e.target.value)} placeholder="Apto., torre, interior"/></label>
         <div className="location-action"><button type="button" className="location-button" onClick={useCurrentLocation} disabled={locationBusy}><Navigation size={15}/>{locationBusy?'Buscando ubicación…':'Usar mi ubicación actual'}</button><span>Con tu permiso, completamos ciudad, departamento y código postal. La dirección exacta se revisa manualmente.</span></div>
-        <small className="location-privacy">Al usar esta opción, compartes tu ubicación actual con BRAVA y BigDataCloud para buscar la ciudad. <a href="https://www.bigdatacloud.com/privacy" target="_blank" rel="noreferrer">Ver privacidad</a>.</small>
+        <small className="location-privacy">Tu ubicación se consulta en BigDataCloud. Si el GPS no responde, intentamos una ubicación aproximada por red; puedes seguir escribiendo la dirección manualmente. <a href="https://www.bigdatacloud.com/privacy" target="_blank" rel="noreferrer">Ver privacidad</a>.</small>
         {locationStatus&&<p className="location-status" role="status" aria-live="polite">{locationStatus}</p>}
         <div className="checkout-fields three-cols"><label className="checkout-field">Departamento<input required autoComplete="address-level1" value={form.department} onChange={e=>update('department',e.target.value)} placeholder="Departamento"/></label><label className="checkout-field">Ciudad<input required autoComplete="address-level2" value={form.city} onChange={e=>update('city',e.target.value)} placeholder="Ciudad"/></label><label className="checkout-field">Código postal <span>(opcional)</span><input autoComplete="postal-code" value={form.postalCode} onChange={e=>update('postalCode',e.target.value)} placeholder="Código postal"/></label></div>
         <label className="checkout-field checkout-full location-notes">Indicaciones para encontrar el lugar <span>(opcional)</span><textarea rows="3" value={form.locationNotes} onChange={e=>update('locationNotes',e.target.value)} placeholder="Ej.: portería azul junto al parque; llamar al llegar; casa de reja blanca…"/></label>
