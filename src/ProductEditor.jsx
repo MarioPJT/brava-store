@@ -6,7 +6,7 @@ import { prepareProductImage } from './lib/prepareProductImage';
 export default function ProductEditor({ initial, onCancel, onSave }) {
   const [form, setForm] = useState(() => initial
     ? { ...initial, variants: initial.variants?.join(', ') || '' }
-    : { name: '', seller: '', price: '', category: 'Gorras', color: 'Arena', style: 'Minimal', stock: 0, badge: 'Nuevo', img: '', description: '', material: '', adjust: '', variants: '', rating: 0, reviews: 0 });
+    : { name: '', seller: '', price: '', category: 'Gorras', color: 'Arena', style: 'Minimal', stock: 0, badge: 'Nuevo', img: '', description: '', variants: '', rating: 0, reviews: 0 });
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [imageError, setImageError] = useState('');
@@ -61,8 +61,6 @@ export default function ProductEditor({ initial, onCancel, onSave }) {
         {imageError && <small className="product-image-error" role="alert">{imageError}</small>}
       </div>
       <label className="editor-wide">Descripción<textarea required rows="3" maxLength="1200" value={form.description} onChange={event => field('description', event.target.value)}/></label>
-      <label>Materiales<input value={form.material} onChange={event => field('material', event.target.value)}/></label>
-      <label>Ajuste o medidas<input value={form.adjust} onChange={event => field('adjust', event.target.value)}/></label>
       <label className="editor-wide">Tallas o variantes<input value={form.variants} onChange={event => field('variants', event.target.value)} placeholder="S/M, L/XL (separadas por coma)"/></label>
     </div>
     <div className="editor-actions"><button type="button" className="text-link" onClick={onCancel}>Cancelar</button><button className="btn dark"><Check size={15}/> Guardar producto</button></div>
