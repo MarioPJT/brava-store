@@ -6,13 +6,16 @@ export const PRODUCT_CATEGORIES = [
   'Bolsos y morrales',
   'Joyería',
   'Calzado',
-  'Hogar y decoración',
   'Cuidado personal',
-  'Tecnología',
   'Otros',
 ];
 
+const HIDDEN_CATEGORIES = new Set(['Hogar y decoración', 'Tecnología']);
+
+// Exclude removed categories from storefront filters, including old catalog rows.
 export const categoriesIn = catalog => [...new Set([
   ...PRODUCT_CATEGORIES,
-  ...catalog.map(product => product.category?.trim()).filter(Boolean),
+  ...catalog
+    .map(product => product.category?.trim())
+    .filter(category => category && !HIDDEN_CATEGORIES.has(category)),
 ])];
