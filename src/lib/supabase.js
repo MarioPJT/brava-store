@@ -13,6 +13,7 @@ export const fromDatabaseProduct = row => ({
   color: row.color, style: row.style, stock: row.stock, badge: row.badge, img: row.image_url,
   description: row.description, material: row.material, adjust: row.adjust,
   variants: row.variants || [], rating: Number(row.rating || 0), reviews: row.reviews || 0,
+  owner_id: row.owner_id || null, publication_status: row.publication_status || 'published', moderation_note: row.moderation_note || '',
 });
 
 export const toDatabaseProduct = product => ({
