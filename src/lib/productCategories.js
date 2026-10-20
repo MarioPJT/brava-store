@@ -7,10 +7,9 @@ export const PRODUCT_CATEGORIES = [
   'Joyería',
   'Calzado',
   'Cuidado personal',
-  'Otros',
 ];
 
-const HIDDEN_CATEGORIES = new Set(['Hogar y decoración', 'Tecnología']);
+const HIDDEN_CATEGORIES = new Set(['Hogar y decoración', 'Tecnología', 'Otros']);
 
 // Exclude removed categories from storefront filters, including old catalog rows.
 export const categoriesIn = catalog => [...new Set([
