@@ -7,6 +7,18 @@ const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const supabaseConfigured = Boolean(url && key);
 export const supabase = supabaseConfigured ? createClient(url, key) : null;
 
+// Upload public product photos into the current user's private folder namespace.
+export const uploadProductImage = async (file, userId) => {
+  if (!supabase || !userId) throw new Error('Inicia sesión para subir una imagen.');
+  const extensions = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+  if (!extensions[file?.type]) throw new Error('Elige una imagen JPG, PNG, WEBP o GIF.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('La imagen debe pesar máximo 5 MB.');
+  const path = `${userId}/${crypto.randomUUID()}.${extensions[file.type]}`;
+  const { error } = await supabase.storage.from('product-images').upload(path, file, { cacheControl: '3600', contentType: file.type, upsert: false });
+  if (error) throw error;
+  return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+};
+
 // Keep database column names separate from the product shape used by the UI.
 export const fromDatabaseProduct = row => ({
   id: row.id, name: row.name, seller: row.seller, price: Number(row.price), category: row.category,

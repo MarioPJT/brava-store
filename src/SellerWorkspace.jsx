@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Clock3, Megaphone, Package, Plus, Sparkles, Store, Trash2 } from 'lucide-react';
 import ProductEditor from './ProductEditor';
-import { fromDatabaseProduct, supabase, toDatabaseProduct } from './lib/supabase';
+import { fromDatabaseProduct, supabase, toDatabaseProduct, uploadProductImage } from './lib/supabase';
 
 const money = value => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(value)||0);
 const image = value => value?.startsWith('http') ? value : `https://images.unsplash.com/${value}?auto=format&fit=crop&w=220&q=80`;
@@ -36,14 +36,18 @@ export default function SellerWorkspace({user,profile,profileLoading=false,onPro
 
   const saveProduct=async product=>{
     if(!supabase||!user)return;
-    const payload={...toDatabaseProduct({...product,seller:profile.store_name}),owner_id:user.id,publication_status:'pending',moderation_note:''};
-    const query=product.id
-      ?supabase.from('products').update(payload).eq('id',product.id).eq('owner_id',user.id).select().single()
-      :supabase.from('products').insert(payload).select().single();
-    const {data,error}=await query;
-    if(error){notify(`No se pudo enviar el producto: ${error.message}`);return;}
-    const saved=fromDatabaseProduct(data);setProducts(old=>product.id?old.map(item=>item.id===product.id?{...saved,publication_status:data.publication_status,moderation_note:data.moderation_note}:item):[{...saved,publication_status:data.publication_status,moderation_note:data.moderation_note},...old]);
-    setEditorOpen(false);setEditing(null);notify('Producto enviado a revisión de BRAVA.');
+    try{
+      const {imageFile,...productData}=product;
+      if(imageFile)productData.img=await uploadProductImage(imageFile,user.id);
+      const payload={...toDatabaseProduct({...productData,seller:profile.store_name}),owner_id:user.id,publication_status:'pending',moderation_note:''};
+      const query=product.id
+        ?supabase.from('products').update(payload).eq('id',product.id).eq('owner_id',user.id).select().single()
+        :supabase.from('products').insert(payload).select().single();
+      const {data,error}=await query;
+      if(error)throw error;
+      const saved=fromDatabaseProduct(data);setProducts(old=>product.id?old.map(item=>item.id===product.id?{...saved,publication_status:data.publication_status,moderation_note:data.moderation_note}:item):[{...saved,publication_status:data.publication_status,moderation_note:data.moderation_note},...old]);
+      setEditorOpen(false);setEditing(null);notify('Producto enviado a revisión de BRAVA.');
+    }catch(error){notify(`No se pudo enviar el producto: ${error.message}`);}
   };
 
   const removeProduct=async product=>{
