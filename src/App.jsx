@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronRight, Heart, LayoutDashboard, MapPin, Menu, Minus, Navigation, Plus, Search, ShoppingBag, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronRight, Heart, LayoutDashboard, MapPin, Menu, Minus, Navigation, Plus, Search, ShoppingBag, SlidersHorizontal, Sparkles, Star, Store, X } from 'lucide-react';
 import AdminWorkspace from './AdminWorkspace';
 import SellerWorkspace from './SellerWorkspace';
 import { fromDatabaseProduct, supabase, supabaseConfigured, toDatabaseProduct } from './lib/supabase';
