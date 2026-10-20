@@ -91,6 +91,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .location-button:hover:not(:disabled){background:#e9ece4}
 .location-action>span,.location-status{font-size:8px;line-height:1.55;color:#77716a}
 .location-status{margin:0 0 11px;padding:8px 10px;background:#eeeee8;border-left:2px solid #78836c}
+.location-privacy{display:block;margin:-5px 0 12px;color:#858078;font-size:8px;line-height:1.5}
+.location-privacy a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .location-notes{margin-top:5px}
 .checkout-check{display:flex;align-items:flex-start;gap:10px;margin:12px 0;color:#5d5953;font-size:9px;line-height:1.65;cursor:pointer}
 .checkout-check input{width:16px;height:16px;flex:0 0 auto;margin:1px 0 0;accent-color:#252422}

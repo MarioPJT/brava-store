@@ -255,18 +255,45 @@ function AdminPanel({catalog,supabaseConfigured,profile,authUser,adminTab,setAdm
 function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,shippingCarriers,selectedCarrierId,setShippingCarrierId,dispatchDays,form,setForm,changeQty,openProduct,submitCheckout,checkoutBusy,wompiCheckoutEnabled,money,photo}) {
   const update=(field,value)=>setForm(old=>({...old,[field]:value}));
   const [locationBusy,setLocationBusy]=useState(false),[locationStatus,setLocationStatus]=useState('');
-  // The browser asks for permission; coordinates stay in the editable delivery notes.
-  const useCurrentLocation=()=>{
-    if(!navigator.geolocation){setLocationStatus('Este navegador no permite compartir la ubicación. Completa la dirección manualmente.');return;}
-    setLocationBusy(true);setLocationStatus('Solicitando permiso de ubicación…');
-    navigator.geolocation.getCurrentPosition(({coords})=>{
-      const lat=coords.latitude.toFixed(6),lon=coords.longitude.toFixed(6),mapUrl=`https://maps.google.com/?q=${lat},${lon}`;
-      update('locationNotes',`${form.locationNotes?`${form.locationNotes}\n`:''}Pin de entrega: ${mapUrl}`);
-      setLocationBusy(false);setLocationStatus('Pin añadido. Completa y revisa la dirección, ciudad y departamento.');
-    },error=>{
-      setLocationBusy(false);
-      setLocationStatus(error.code===1?'No se concedió el permiso. Puedes escribir la dirección y las indicaciones manualmente.':'No pudimos obtener la ubicación. Revisa el permiso del navegador o completa los datos manualmente.');
-    },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+  // Browser geolocation supplies coordinates; a client-side reverse lookup fills locality fields.
+  const useCurrentLocation=async()=>{
+    if(!window.isSecureContext){setLocationStatus('El navegador solo permite ubicación en una conexión segura (HTTPS) o en localhost. Abre BRAVA en Chrome desde el enlace local o usa la dirección manual.');return;}
+    if(!navigator.geolocation){setLocationStatus('Este navegador no ofrece ubicación. Abre la tienda en Chrome o Safari, o completa la dirección manualmente.');return;}
+    setLocationBusy(true);setLocationStatus('Solicitando permiso y buscando tu ubicación…');
+    try{
+      const position=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:false,timeout:25000,maximumAge:120000}));
+      const lat=position.coords.latitude.toFixed(6),lon=position.coords.longitude.toFixed(6),mapUrl=`https://maps.google.com/?q=${lat},${lon}`;
+      let place=null;
+      try{
+        // The provider's free endpoint is client-only and is called only after the user shares current location.
+        const params=new URLSearchParams({latitude:lat,longitude:lon,localityLanguage:'es'});
+        const controller=new AbortController(),timer=window.setTimeout(()=>controller.abort(),9000);
+        try{
+          const response=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`,{signal:controller.signal});
+          if(!response.ok)throw new Error('reverse-geocode-failed');
+          place=await response.json();
+        }finally{window.clearTimeout(timer);}
+      }catch{place=null;}
+      setForm(current=>{
+        const notes=(current.locationNotes||'').split('\n').filter(line=>!line.startsWith('Pin de entrega:'));
+        notes.push(`Pin de entrega: ${mapUrl}`);
+        return {...current,
+          department:place?.principalSubdivision||current.department,
+          city:place?.city||place?.locality||current.city,
+          postalCode:place?.postcode||current.postalCode,
+          locationNotes:notes.filter(Boolean).join('\n'),
+        };
+      });
+      const locality=place?.city||place?.locality;
+      setLocationStatus(locality?'Ubicación agregada. Completamos ciudad, departamento y código postal cuando están disponibles; revisa la dirección y el pin antes de continuar.':'Guardamos el pin de ubicación, pero no pudimos completar ciudad y departamento. Revisa la conexión y completa esos campos manualmente.');
+    }catch(error){
+      const messages={
+        1:'El permiso de ubicación está bloqueado. En los ajustes del sitio, permite Ubicación y vuelve a intentarlo; también revisa que la ubicación del dispositivo esté activa.',
+        2:'El dispositivo no pudo determinar tu ubicación. Activa los servicios de ubicación o prueba desde un teléfono con GPS; también puedes completar la dirección manualmente.',
+        3:'La búsqueda de ubicación tardó demasiado. Comprueba la señal y vuelve a intentarlo; puedes continuar con la dirección manual.',
+      };
+      setLocationStatus(messages[error?.code]||'No pudimos obtener la ubicación. Revisa los permisos del navegador y los servicios de ubicación del dispositivo, o completa los datos manualmente.');
+    }finally{setLocationBusy(false);}
   };
   const qualifiesForFreeShipping=freeShippingMinimum>0&&subtotal>=freeShippingMinimum;
   const total=subtotal+(shippingEstimate||0);
@@ -281,7 +308,8 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
         <div className="checkout-fields two-cols"><label className="checkout-field">Nombre<input required autoComplete="given-name" value={form.name} onChange={e=>update('name',e.target.value)} placeholder="Nombre"/></label><label className="checkout-field">Apellidos<input required autoComplete="family-name" value={form.surname} onChange={e=>update('surname',e.target.value)} placeholder="Apellidos"/></label></div>
         <label className="checkout-field checkout-full">Dirección<input required autoComplete="address-line1" value={form.address} onChange={e=>update('address',e.target.value)} placeholder="Calle, carrera y número"/></label>
         <label className="checkout-field checkout-full">Apartamento, casa o interior <span>(opcional)</span><input autoComplete="address-line2" value={form.extraAddress} onChange={e=>update('extraAddress',e.target.value)} placeholder="Apto., torre, interior"/></label>
-        <div className="location-action"><button type="button" className="location-button" onClick={useCurrentLocation} disabled={locationBusy}><Navigation size={15}/>{locationBusy?'Buscando ubicación…':'Usar mi ubicación actual'}</button><span>El navegador te pedirá permiso. El pin se añade a las indicaciones; puedes editarlo o quitarlo.</span></div>
+        <div className="location-action"><button type="button" className="location-button" onClick={useCurrentLocation} disabled={locationBusy}><Navigation size={15}/>{locationBusy?'Buscando ubicación…':'Usar mi ubicación actual'}</button><span>Con tu permiso, completamos ciudad, departamento y código postal. La dirección exacta se revisa manualmente.</span></div>
+        <small className="location-privacy">Al usar esta opción, compartes tu ubicación actual con BRAVA y BigDataCloud para buscar la ciudad. <a href="https://www.bigdatacloud.com/privacy" target="_blank" rel="noreferrer">Ver privacidad</a>.</small>
         {locationStatus&&<p className="location-status" role="status" aria-live="polite">{locationStatus}</p>}
         <div className="checkout-fields three-cols"><label className="checkout-field">Departamento<input required autoComplete="address-level1" value={form.department} onChange={e=>update('department',e.target.value)} placeholder="Departamento"/></label><label className="checkout-field">Ciudad<input required autoComplete="address-level2" value={form.city} onChange={e=>update('city',e.target.value)} placeholder="Ciudad"/></label><label className="checkout-field">Código postal <span>(opcional)</span><input autoComplete="postal-code" value={form.postalCode} onChange={e=>update('postalCode',e.target.value)} placeholder="Código postal"/></label></div>
         <label className="checkout-field checkout-full location-notes">Indicaciones para encontrar el lugar <span>(opcional)</span><textarea rows="3" value={form.locationNotes} onChange={e=>update('locationNotes',e.target.value)} placeholder="Ej.: portería azul junto al parque; llamar al llegar; casa de reja blanca…"/></label>
