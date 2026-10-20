@@ -133,15 +133,28 @@ function App() {
     return()=>{alive=false;};
   },[page,profile?.role]);
   useEffect(()=>{
-    if(page!=='panel-admin'||adminSection!=='sellers'||profile?.role!=='admin'||!supabase)return;
-    let alive=true;setSellerAppsBusy(true);
-    supabase.from('seller_profiles').select('*').order('created_at',{ascending:false}).then(({data,error})=>{
+    if(profile?.role!=='admin'||!supabase)return;
+    let alive=true,initialized=false;
+    const knownIds=new Set();
+    setSellerAppsBusy(true);
+    const refreshSellerApplications=async()=>{
+      const {data,error}=await supabase.from('seller_profiles').select('*').order('created_at',{ascending:false});
       if(!alive)return;
-      if(error)notify(`No se pudieron cargar las solicitudes de vendedores: ${error.message}`);else setSellerApplications(data||[]);
+      if(error){notify(`No se pudieron cargar las solicitudes de vendedores: ${error.message}`);setSellerAppsBusy(false);return;}
+      const applications=data||[];
+      const newPending=initialized?applications.filter(application=>application.status==='pending'&&!knownIds.has(application.user_id)):[];
+      applications.forEach(application=>knownIds.add(application.user_id));
+      setSellerApplications(applications);
       setSellerAppsBusy(false);
-    });
-    return()=>{alive=false;};
-  },[page,adminSection,profile?.role]);
+      if(newPending.length){
+        notify(newPending.length===1?`Nueva solicitud de ${newPending[0].store_name}. Revísala en Vendedores.`:`Hay ${newPending.length} nuevas solicitudes de vendedores para revisar.`);
+      }
+      initialized=true;
+    };
+    refreshSellerApplications();
+    const interval=window.setInterval(refreshSellerApplications,15000);
+    return()=>{alive=false;window.clearInterval(interval);};
+  },[profile?.role]);
   useEffect(()=>{
     if(page!=='panel-admin'||adminSection!=='marketing'||profile?.role!=='admin'||!supabase)return;
     let alive=true;

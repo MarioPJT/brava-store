@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BarChart3, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, LayoutDashboard, Megaphone, Package, Plus, Search, Settings, ShoppingCart, Store, Users, X } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BarChart3, Bell, Check, ChevronDown, ChevronRight, CircleDollarSign, ExternalLink, LayoutDashboard, Megaphone, Package, Plus, Search, Settings, ShoppingCart, Store, Users, X } from 'lucide-react';
 import ProductEditor from './ProductEditor';
 import { supabase } from './lib/supabase';
 
@@ -39,6 +39,7 @@ export default function AdminWorkspace(props){
   const [title,subtitle]=headings[adminSection]||headings.overview;
   const inventory=catalog.reduce((sum,p)=>sum+Number(p.stock||0),0);
   const lowStock=catalog.filter(p=>p.stock>0&&p.stock<=3).length;
+  const pendingSellerCount=sellerApplications.filter(seller=>seller.status==='pending').length;
   const filteredCatalog=catalog.filter(p=>(categoryFilter==='Todas'||p.category===categoryFilter)&&(p.name+' '+p.seller+' '+p.style+' '+p.color).toLowerCase().includes(search.toLowerCase()));
   const goto=id=>{setAdminSection(id);setMobileMenuOpen(false);setSearch('');};
 
@@ -46,12 +47,12 @@ export default function AdminWorkspace(props){
     <aside className={`admin-sidebar ${mobileMenuOpen?'mobile-open':''}`}>
       <div className="admin-brand"><button className="admin-brand-mark" onClick={()=>go('inicio')} aria-label="Volver a la tienda">B</button><div><b>{storeSettings.store_name||'BRAVA'}</b><span>Centro de operación</span></div><button className="admin-close-mobile" onClick={()=>setMobileMenuOpen(false)} aria-label="Cerrar menú"><X size={17}/></button></div>
       <div className="admin-nav-caption">TIENDA</div>
-      <nav className="admin-nav" aria-label="Administración de BRAVA">{sections.map(({id,label,icon:Icon})=><button key={id} className={adminSection===id?'active':''} onClick={()=>goto(id)} aria-current={adminSection===id?'page':undefined}><Icon size={17}/><span>{label}</span>{id==='marketing'&&campaigns.length>0&&<small>{campaigns.length}</small>}</button>)}</nav>
+      <nav className="admin-nav" aria-label="Administración de BRAVA">{sections.map(({id,label,icon:Icon})=><button key={id} className={adminSection===id?'active':''} onClick={()=>goto(id)} aria-current={adminSection===id?'page':undefined}><Icon size={17}/><span>{label}</span>{id==='sellers'&&pendingSellerCount>0?<small className="seller-pending-badge">{pendingSellerCount}</small>:id==='marketing'&&campaigns.length>0&&<small>{campaigns.length}</small>}</button>)}</nav>
       <div className="admin-sidebar-bottom"><div className="admin-store-status"><span className="admin-status-dot"/><span>Catálogo conectado</span><small>Supabase</small></div><button className="admin-side-action" onClick={()=>go('inicio')}><Store size={16}/><span>Ver tienda</span><ArrowUpRight size={14}/></button><button className="admin-profile" onClick={signOut}><span className="admin-avatar">{(profile?.display_name||authUser?.email||'A').slice(0,1).toUpperCase()}</span><span><b>{profile?.display_name||authUser?.email||'Administrador'}</b><small>Cerrar sesión</small></span><ArrowDownRight size={15}/></button></div>
     </aside>
 
     <section className="admin-main">
-      <header className="admin-topbar"><button className="admin-mobile-toggle" onClick={()=>setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir navegación"><span/><span/><span/></button><div className="admin-crumb"><span>BRAVA</span><ChevronRight size={13}/><b>Administración</b></div><div className="admin-top-actions"><span className="admin-live"><i/>Tienda conectada</span><button className="admin-view-store" onClick={()=>go('inicio')}><span>Ver tienda</span><ExternalLink size={14}/></button></div></header>
+      <header className="admin-topbar"><button className="admin-mobile-toggle" onClick={()=>setMobileMenuOpen(!mobileMenuOpen)} aria-label="Abrir navegación"><span/><span/><span/></button><div className="admin-crumb"><span>BRAVA</span><ChevronRight size={13}/><b>Administración</b></div><div className="admin-top-actions"><span className="admin-live"><i/>Tienda conectada</span><button className={`admin-notification-button ${pendingSellerCount?'has-notifications':''}`} onClick={()=>goto('sellers')} aria-label={`${pendingSellerCount} solicitudes de vendedor pendientes`} title={`${pendingSellerCount} solicitudes pendientes`}><Bell size={16}/>{pendingSellerCount>0&&<span>{pendingSellerCount}</span>}</button><button className="admin-view-store" onClick={()=>go('inicio')}><span>Ver tienda</span><ExternalLink size={14}/></button></div></header>
       <div className="admin-page-content">
         <div className="admin-page-title"><div><p className="admin-context">{current.label}</p><h1>{title}</h1><p>{subtitle}</p></div>{adminSection==='catalog'&&<button className="btn dark" onClick={()=>{setEditingProduct(null);setProductFormOpen(true)}}><Plus size={16}/> Añadir producto</button>}{adminSection==='marketing'&&<button className="btn dark" onClick={()=>{setEditingCampaign(null);setCampaignFormOpen(true)}}><Plus size={16}/> Crear campaña</button>}</div>
         {adminSection==='overview'&&<Overview catalog={catalog} inventory={inventory} lowStock={lowStock} customers={adminUsers.length} usersBusy={usersBusy} campaigns={campaigns} goto={goto} addProduct={()=>{goto('catalog');setEditingProduct(null);setProductFormOpen(true)}}/>}
