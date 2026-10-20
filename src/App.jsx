@@ -302,7 +302,8 @@ function CheckoutExperience({cart,subtotal,shippingEstimate,freeShippingMinimum,
       try{streetAddress=await lookupStreetAddress({latitude:lat,longitude:lon});}catch{streetAddress=null;}
       saveDetectedLocation(place,mapUrl,streetAddress);
       const locality=place?.city||place?.locality;
-      setLocationStatus(locality?(streetAddress?.address_line1?'Ubicación agregada. Completamos la dirección aproximada y los datos de ciudad; verifica todo antes de continuar.':'Completamos ciudad y departamento. Para llenar calle y número configura la búsqueda de direcciones; verifica el pin y completa los campos faltantes.'):'Guardamos el pin de ubicación, pero no pudimos completar ciudad y departamento. Revisa la conexión y completa esos campos manualmente.');
+      const streetLookupEnabled=Boolean(import.meta.env.VITE_GEOAPIFY_API_KEY);
+      setLocationStatus(locality?(streetAddress?.address_line1?'Ubicación agregada. Completamos una dirección aproximada y los datos de ciudad; verifica todo antes de continuar.':streetLookupEnabled?'Completamos ciudad y departamento, pero el servicio no encontró una calle para este punto. Revisa el pin y completa la dirección manualmente.':'Completamos ciudad y departamento. Falta configurar VITE_GEOAPIFY_API_KEY para buscar calle y número; el pin quedó en las indicaciones.'):'Guardamos el pin de ubicación, pero no pudimos completar ciudad y departamento. Revisa la conexión y completa esos campos manualmente.');
     }catch(error){
       // An in-app browser may time out without GPS; only then try an explicitly disclosed approximate IP location.
       if(error?.code===2||error?.code===3){
