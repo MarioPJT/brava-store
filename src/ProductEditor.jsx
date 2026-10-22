@@ -10,7 +10,6 @@ export default function ProductEditor({ initial, onCancel, onSave }) {
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [imageError, setImageError] = useState('');
-  const [customCategory,setCustomCategory]=useState(()=>Boolean(initial?.category&&!PRODUCT_CATEGORIES.includes(initial.category)));
   const [imageAdjustments,setImageAdjustments]=useState({zoom:1,x:50,y:50,rotation:0,brightness:100});
   const field = (key, value) => setForm(old => ({ ...old, [key]: value }));
 
@@ -50,7 +49,7 @@ export default function ProductEditor({ initial, onCancel, onSave }) {
       <label>Marca o vendedor<input required maxLength="80" value={form.seller} onChange={event => field('seller', event.target.value)}/></label>
       <label>Precio en COP<input type="number" min="0" required value={form.price} onChange={event => field('price', event.target.value)}/></label>
       <label>Unidades disponibles<input type="number" min="0" required value={form.stock} onChange={event => field('stock', event.target.value)}/></label>
-      <label>Categoría<select value={customCategory?'__custom__':form.category} onChange={event=>{const custom=event.target.value==='__custom__';setCustomCategory(custom);if(!custom)field('category',event.target.value);else field('category','');}}><option value="" disabled>Elige una categoría</option>{PRODUCT_CATEGORIES.map(category=><option key={category} value={category}>{category}</option>)}<option value="__custom__">Otra categoría…</option></select>{customCategory&&<input required autoFocus maxLength="50" value={form.category} onChange={event=>field('category',event.target.value)} placeholder="Escribe la categoría"/>}</label>
+      <label>Categoría<select value={form.category} onChange={event=>field('category',event.target.value)}><option value="" disabled>Elige una categoría</option>{PRODUCT_CATEGORIES.map(category=><option key={category} value={category}>{category}</option>)}</select></label>
       <label>Estilo<input required value={form.style} onChange={event => field('style', event.target.value)} placeholder="Minimal, urbano, bordado…"/></label>
       <label>Color<input required value={form.color} onChange={event => field('color', event.target.value)}/></label>
       <label>Etiqueta<input value={form.badge} onChange={event => field('badge', event.target.value)} placeholder="Nuevo, edición local…"/></label>
