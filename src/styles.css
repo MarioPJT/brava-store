@@ -63,6 +63,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .admin-tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:0 0 36px}.admin-tabs button{border:0;border-bottom:2px solid transparent;background:none;padding:12px 0;font-size:11px;color:var(--muted)}.admin-tabs button.selected{border-bottom-color:var(--wine);color:var(--ink)}.admin-user{display:grid;grid-template-columns:44px 1fr auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}.admin-user .seller-avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#e4ded4;font-family:'Barlow Condensed',sans-serif;font-size:18px}.admin-user .admin-product-actions{align-items:center}.role-pill{font-size:9px;background:#e6e3db;padding:6px 9px;color:#59554f}.role-pill.role-admin{background:#e8d9d8;color:#693a3b}
 @media(max-width:760px){.admin-user{grid-template-columns:42px 1fr}.admin-user .admin-product-actions{grid-column:2;flex-wrap:wrap}.admin-tabs{gap:16px}}
 
+/* Give the storefront a subtle, cinematic arrival while keeping motion optional. */
+.hero>img{animation:hero-drift 18s cubic-bezier(.2,.65,.3,1) both;transform-origin:center 42%}
+.hero-copy>*{opacity:0;animation:hero-copy-arrive .75s cubic-bezier(.2,.7,.2,1) both}
+.hero-copy>.eyebrow{animation-delay:.12s}.hero-copy>h1{animation-delay:.24s}.hero-copy>p:not(.eyebrow){animation-delay:.38s}.hero-copy>.btn{animation-delay:.52s}
+.hero-note{animation:hero-note-arrive .8s .7s both}
+.hero-signal{position:absolute;right:5.5%;top:50%;display:flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:1px solid #f4f0e740;background:#26231f42;backdrop-filter:blur(8px);transform:translateY(-50%);animation:hero-note-arrive .8s .9s both}
+.hero-signal i{display:block;width:2px;height:7px;background:#f2eee4;opacity:.62;animation:signal-beat 1.25s ease-in-out infinite alternate}
+.hero-signal i:nth-child(2){height:12px;animation-delay:.12s}.hero-signal i:nth-child(3){height:17px;animation-delay:.24s}.hero-signal i:nth-child(4){height:10px;animation-delay:.36s}.hero-signal i:nth-child(5){height:14px;animation-delay:.48s}
+@keyframes hero-drift{from{transform:scale(1.055)}to{transform:scale(1)}}
+@keyframes hero-copy-arrive{from{opacity:0;transform:translateY(17px)}to{opacity:1;transform:translateY(0)}}
+@keyframes hero-note-arrive{from{opacity:0}to{opacity:1}}
+@keyframes signal-beat{from{transform:scaleY(.55);opacity:.35}to{transform:scaleY(1);opacity:.9}}
+@media(max-width:760px){.hero-signal{right:7%;top:auto;bottom:72px;transform:none}.hero-note{right:7%;bottom:20px;left:7%;font-size:7px}.hero-note span:first-child{max-width:48%}}
+@media(prefers-reduced-motion:reduce){.hero>img,.hero-copy>*,.hero-note,.hero-signal,.hero-signal i{animation:none!important;opacity:1!important;transform:none!important}html{scroll-behavior:auto}}
+
 /* Settings controls stay legible while fitting BRAVA's compact admin forms. */
 .settings-form .settings-check{display:flex;align-items:center;gap:10px;color:#34372f;font-size:10px;line-height:1.45}
 .settings-form .settings-check input{width:16px;height:16px;min-width:16px;accent-color:#59634f}
