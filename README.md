@@ -24,6 +24,12 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 No pongas claves `service_role` o secretas en variables `VITE_` ni en el navegador.
 
+Para completar calle y número desde la ubicación, añade una clave de Geoapify en
+`VITE_GEOAPIFY_API_KEY`. Es una clave pública del navegador: restríngela en Geoapify
+al dominio local/de producción de BRAVA y al servicio **Reverse Geocoding**. Sin
+esa clave, la ubicación puede completar ciudad y departamento; el apartamento o
+interior siempre debe confirmarlo la persona.
+
 ## Compilar
 
 ```bash
@@ -41,4 +47,10 @@ Las migraciones SQL están en `supabase/migrations/`. Aplícalas en orden en el 
 
 ## Estado actual
 
-La interfaz incluye catálogo con filtros, carrito de demostración, registro e inicio de sesión, edición de productos, gestión de perfiles, campañas y configuración de tienda. El checkout aún no procesa pagos ni crea pedidos reales.
+La interfaz incluye catálogo con filtros, carrito, registro e inicio de sesión, edición de productos, gestión de perfiles, campañas y configuración de tienda. El checkout seguro está preparado, pero permanece desactivado hasta configurar Wompi, Resend y Twilio.
+
+## Pagos y confirmaciones de compra
+
+El checkout de Wompi se habilita con `VITE_WOMPI_CHECKOUT_ENABLED=true` después de configurar y desplegar las funciones de Supabase. El navegador nunca recibe llaves privadas. El pedido se calcula con los precios vigentes de Supabase, Wompi confirma el pago mediante eventos firmados y solamente entonces las funciones envían el recibo por Resend y el SMS transaccional por Twilio.
+
+Consulta [PAYMENTS_SETUP.md](PAYMENTS_SETUP.md) para migrar la base de datos, configurar las credenciales seguras de Supabase, desplegar las funciones y registrar el webhook en Wompi. Sin las cuentas y llaves del comercio, Resend y Twilio, los pagos y mensajes permanecen desactivados.

@@ -1,3 +1,4 @@
+-- This version is already recorded as applied in the BRAVA Store project; keep the ID in sync.
 -- BRAVA account profiles and guarded admin RPCs for this standalone project.
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
