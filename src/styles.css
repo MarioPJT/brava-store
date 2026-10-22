@@ -91,6 +91,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .feature-image{isolation:isolate}.feature-image:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.12) 48%,transparent 62%);transform:translateX(-120%);transition:transform 1.1s cubic-bezier(.2,.65,.25,1)}
 .feature-collection.is-visible .feature-image:after{transform:translateX(120%)}
 @media(max-width:760px){.home-scroll-reveal{transform:translate3d(0,22px,0) scale(.994);filter:blur(1px)}.category-card img[data-scroll-parallax],.feature-image img[data-scroll-parallax],.seller-cta>img[data-scroll-parallax]{transform:translate3d(0,var(--scroll-drift,0px),0) scale(1.04)}}
+@media(max-width:760px){.hero>img{object-position:0% center}}
 @media(prefers-reduced-motion:reduce){.home-scroll-reveal,.home-scroll-reveal .category-card,.home-scroll-reveal .product-card,.home-scroll-reveal .value-item,.category-card img[data-scroll-parallax],.feature-image img[data-scroll-parallax],.seller-cta>img[data-scroll-parallax],.feature-image:after{opacity:1;filter:none;transform:none;transition:none;animation:none;will-change:auto}}
 
 /* Settings controls stay legible while fitting BRAVA's compact admin forms. */
